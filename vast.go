@@ -78,7 +78,36 @@ type InLine struct {
 	// custom element should be nested under <Extensions> to help separate custom
 	// XML elements from VAST elements. The following example includes a custom
 	// xml element within the Extensions element.
-	Extensions *[]Extension `xml:"Extensions>Extension,omitempty"`
+	Extensions      *[]Extension     `xml:"Extensions>Extension,omitempty"`
+	AdVerifications *AdVerifications `xml:",omitempty"`
+}
+
+type AdVerifications struct {
+	AdVerifications []Verification `xml:"Verification,omitempty"`
+}
+
+type Verification struct {
+	Vendor                 string                  `xml:"vendor,attr"`
+	JavaScriptResource     *JavaScriptResource     `xml:",omitempty"`
+	ExecutableResource     *ExecutableResource     `xml:",omitempty"`
+	TrackingEvents         []Tracking              `xml:"TrackingEvents>Tracking,omitempty"`
+	VerificationParameters *VerificationParameters `xml:",omitempty"`
+}
+
+type JavaScriptResource struct {
+	APIFramework    string `xml:"apiFramework,attr"`
+	BrowserOptional bool   `xml:"browserOptional,attr"`
+	URI             string `xml:",cdata"`
+}
+
+type ExecutableResource struct {
+	APIFramework string `xml:"apiFramework,attr"`
+	Type         string `xml:"type,attr,omitempty"`
+	URI          string `xml:",cdata"`
+}
+
+type VerificationParameters struct {
+	URI string `xml:",cdata"`
 }
 
 // Impression is a URI that directs the video player to a tracking resource file that

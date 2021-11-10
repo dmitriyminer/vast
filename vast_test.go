@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func loadFixture(path string) (*VAST, string, string, error) {
@@ -125,6 +126,80 @@ func TestInlineExtensions(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestInlineAdVerifications(t *testing.T) {
+	v, _, _, err := loadFixture("testdata/vast4_ad_verifications.xml")
+	require.NoError(t, err)
+
+	require.Equal(t, "4.0", v.Version)
+	require.Len(t, v.Ads, 1)
+	ad := v.Ads[0]
+	require.Equal(t, "20001", ad.ID)
+
+	require.NotNil(t, ad.InLine)
+	require.NotNil(t, ad.InLine.AdVerifications)
+	require.Len(t, ad.InLine.AdVerifications.AdVerifications, 2)
+
+	require.Equal(
+		t,
+		"https://verificationcompany1.com/verification_script1.js",
+		strings.TrimSpace(ad.InLine.AdVerifications.AdVerifications[0].JavaScriptResource.URI),
+	)
+
+	require.Equal(
+		t,
+		"https://verificationcompany.com/untrusted.js",
+		strings.TrimSpace(ad.InLine.AdVerifications.AdVerifications[1].JavaScriptResource.URI),
+	)
+}
+
+func TestInlineAdVerificationsExtensions(t *testing.T) {
+	v, _, _, err := loadFixture("testdata/vast_ad_verifications_extensions.xml")
+	require.NoError(t, err)
+
+	require.Equal(t, "2.0", v.Version)
+	require.Len(t, v.Ads, 1)
+
+	ad := v.Ads[0]
+
+	require.Equal(t, "preroll-1", ad.ID)
+	require.NotNil(t, ad.InLine)
+	require.Nil(t, ad.InLine.AdVerifications)
+	require.NotNil(t, ad.InLine.Extensions)
+
+	extensions := *ad.InLine.Extensions
+
+	require.Len(t, extensions, 1)
+	require.Equal(t, "AdVerifications", extensions[0].Type)
+
+	adVerifications := make([]AdVerifications, 0)
+
+	err = xml.Unmarshal(extensions[0].Data, &adVerifications)
+	require.NoError(t, err)
+	require.Len(t, adVerifications, 1)
+	require.Len(t, adVerifications[0].AdVerifications, 1)
+
+	adVerification := adVerifications[0].AdVerifications[0]
+
+	require.Equal(t, "company.com-omid", adVerification.Vendor)
+
+	require.NotNil(t, adVerification.VerificationParameters)
+	require.Equal(
+		t,
+		"parameter1=value1&parameter2=value2&parameter3=value3",
+		strings.TrimSpace(adVerification.VerificationParameters.URI),
+	)
+
+	require.NotNil(t, adVerification.JavaScriptResource)
+	require.Equal(t, "https://company.com/omid.js", strings.TrimSpace(adVerification.JavaScriptResource.URI))
+
+	require.Len(t, adVerification.TrackingEvents, 1)
+	require.Equal(
+		t,
+		"https://company.com/pixel.jpg?error=[REASON]",
+		strings.TrimSpace(adVerification.TrackingEvents[0].URI),
+	)
 }
 
 func TestInlineLinear(t *testing.T) {
